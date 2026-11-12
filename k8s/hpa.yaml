@@ -1,0 +1,22 @@
+# Optional autoscaling: kubectl apply -f k8s/hpa.yaml  (needs resource requests, already set; metrics-server is built into AKS)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: chatbot}
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: chatbot}
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource: {name: cpu, target: {type: Utilization, averageUtilization: 70}}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: gateway}
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: gateway}
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource: {name: cpu, target: {type: Utilization, averageUtilization: 70}}

@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+spec:
+  type: ClusterIP          # internal only
+  selector: {app: gateway}
+  ports:
+    - port: 8000
+      targetPort: 8000
+# All services are ClusterIP (internal) except frontend (public LoadBalancer).
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog
+spec:
+  type: ClusterIP          # internal only
+  selector: {app: catalog}
+  ports:
+    - port: 8001
+      targetPort: 8001
+# All services are ClusterIP (internal) except frontend (public LoadBalancer).
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: search
+spec:
+  type: ClusterIP          # internal only
+  selector: {app: search}
+  ports:
+    - port: 8002
+      targetPort: 8002
+# All services are ClusterIP (internal) except frontend (public LoadBalancer).
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chatbot
+spec:
+  type: ClusterIP          # internal only
+  selector: {app: chatbot}
+  ports:
+    - port: 8003
+      targetPort: 8003
+# All services are ClusterIP (internal) except frontend (public LoadBalancer).
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart
+spec:
+  type: ClusterIP          # internal only
+  selector: {app: cart}
+  ports:
+    - port: 8004
+      targetPort: 8004
+# All services are ClusterIP (internal) except frontend (public LoadBalancer).
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order
+spec:
+  type: ClusterIP          # internal only
+  selector: {app: order}
+  ports:
+    - port: 8005
+      targetPort: 8005
+# All services are ClusterIP (internal) except frontend (public LoadBalancer).
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  type: ClusterIP
+  selector: {app: redis}
+  ports:
+    - port: 6379
+      targetPort: 6379
+# All services are ClusterIP (internal) except frontend (public LoadBalancer).
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  type: LoadBalancer        # the ONLY public entry point: Azure gives it a public IP
+  selector: {app: frontend}
+  ports:
+    - port: 80
+      targetPort: 80

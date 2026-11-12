@@ -1,0 +1,16 @@
+[
+{"id":1,"name":"Wireless Noise-Cancelling Headphones","category":"Electronics","price":7999,"emoji":"🎧","tags":"bluetooth audio music travel anc over-ear","description":"Over-ear Bluetooth headphones with active noise cancellation and 30-hour battery."},
+{"id":2,"name":"Smartphone 128GB 5G","category":"Electronics","price":18999,"emoji":"📱","tags":"mobile phone android camera 5g","description":"6.5 inch AMOLED display, 50MP camera, fast charging, 5G ready."},
+{"id":3,"name":"Gaming Laptop 16GB RTX","category":"Electronics","price":74999,"emoji":"💻","tags":"laptop gaming computer nvidia","description":"15.6 inch 144Hz laptop with dedicated RTX graphics for gaming and editing."},
+{"id":4,"name":"Smart Watch Fitness Tracker","category":"Electronics","price":3499,"emoji":"⌚","tags":"watch fitness heart-rate wearable gps","description":"Tracks steps, heart rate and sleep, 7-day battery, water resistant."},
+{"id":5,"name":"Running Shoes Lightweight","category":"Fashion","price":2999,"emoji":"👟","tags":"shoes sneakers running sports gym","description":"Breathable mesh running shoes with cushioned sole for daily training."},
+{"id":6,"name":"Men's Cotton Casual Shirt","category":"Fashion","price":1299,"emoji":"👕","tags":"shirt clothing men cotton casual","description":"Slim fit pure cotton shirt, comfortable for office and weekends."},
+{"id":7,"name":"Women's Leather Handbag","category":"Fashion","price":2499,"emoji":"👜","tags":"bag purse women leather","description":"Spacious faux-leather handbag with zip compartments and shoulder strap."},
+{"id":8,"name":"Stainless Steel Water Bottle 1L","category":"Home","price":599,"emoji":"🍶","tags":"bottle water steel insulated gym travel","description":"Double-wall insulated bottle keeps drinks cold 24 hours, hot 12 hours."},
+{"id":9,"name":"Non-Stick Cookware Set 5 Pieces","category":"Home","price":2199,"emoji":"🍳","tags":"kitchen cooking pan pot cookware","description":"Induction-friendly non-stick cookware set with heat-resistant handles."},
+{"id":10,"name":"Robot Vacuum Cleaner","category":"Home","price":12999,"emoji":"🧹","tags":"vacuum cleaning robot smart home","description":"Self-navigating vacuum with app control, strong suction and auto-recharge."},
+{"id":11,"name":"Yoga Mat Anti-Slip 6mm","category":"Sports","price":799,"emoji":"🧘","tags":"yoga mat fitness exercise gym","description":"Extra-thick anti-slip mat with carry strap for yoga and workouts."},
+{"id":12,"name":"Adjustable Dumbbell Set 20kg","category":"Sports","price":3999,"emoji":"🏋️","tags":"dumbbell weights strength gym fitness","description":"Adjustable dumbbells with quick-lock plates for home strength training."},
+{"id":13,"name":"Bluetooth Portable Speaker","category":"Electronics","price":1999,"emoji":"🔊","tags":"speaker bluetooth music portable waterproof","description":"Waterproof portable speaker with deep bass and 12-hour playtime."},
+{"id":14,"name":"Mechanical Keyboard RGB","category":"Electronics","price":2799,"emoji":"⌨️","tags":"keyboard gaming computer typing rgb","description":"Hot-swappable mechanical keyboard with RGB backlight and tactile switches."}
+]

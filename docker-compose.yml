@@ -1,0 +1,103 @@
+# Local run: docker compose up --build   ->   http://localhost:8080
+# Data is kept in Docker volumes (mongo-data, pg-data, redis-data); `docker compose down -v` DELETES it.
+# Gateway is also exposed on http://localhost:8000 (try /api/status). Remove that port line if you don't need it.
+x-svc: &svc
+  restart: unless-stopped
+
+services:
+  frontend:
+    build: ./frontend
+    ports: ["8080:80"]
+    depends_on: [gateway]
+
+  gateway:
+    <<: *svc
+    build: ./services/gateway
+    ports: ["8000:8000"]
+    environment:
+      CATALOG_URL: http://catalog:8001
+      SEARCH_URL: http://search:8002
+      CHATBOT_URL: http://chatbot:8003
+      CART_URL: http://cart:8004
+      ORDER_URL: http://order:8005
+    depends_on: [catalog, search, chatbot, cart, order]
+
+  catalog:
+    <<: *svc
+    build: ./services/catalog
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      MONGO_DB: shopai
+      ADMIN_KEY: ${ADMIN_KEY:-}
+    depends_on: [mongo]
+
+  search:
+    <<: *svc
+    build: ./services/search
+    environment:
+      CATALOG_URL: http://catalog:8001
+    depends_on: [catalog]
+
+  chatbot:
+    <<: *svc
+    build: ./services/chatbot
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      CATALOG_URL: http://catalog:8001
+      SEARCH_URL: http://search:8002
+    depends_on: [catalog, search]
+
+  cart:
+    <<: *svc
+    build: ./services/cart
+    environment:
+      CATALOG_URL: http://catalog:8001
+      REDIS_URL: redis://redis:6379/0
+    depends_on: [catalog, redis]
+
+  order:
+    <<: *svc
+    build: ./services/order
+    environment:
+      CART_URL: http://cart:8004
+      ORDER_DB_HOST: postgres
+      ORDER_DB_PORT: "5432"
+      ORDER_DB_USER: shopai
+      ORDER_DB_PASSWORD: ${POSTGRES_PASSWORD:-shopai_pw}
+      ORDER_DB_NAME: shopai
+    depends_on:
+      cart: {condition: service_started}
+      postgres: {condition: service_healthy}
+
+  redis:
+    <<: *svc
+    image: redis:7-alpine
+    volumes: [redis-data:/data]
+    command: ["redis-server", "--appendonly", "yes"]
+
+  mongo:
+    <<: *svc
+    image: mongo:7
+    volumes: [mongo-data:/data/db]
+
+  postgres:
+    <<: *svc
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: shopai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shopai_pw}
+      POSTGRES_DB: shopai
+    volumes: [pg-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shopai -d shopai"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+volumes:
+  redis-data:
+  mongo-data:
+  pg-data:

@@ -1,0 +1,267 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  labels: {app: gateway, tier: backend}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: gateway}
+  template:
+    metadata:
+      labels: {app: gateway, tier: backend}
+    spec:
+      containers:
+        - name: gateway
+          image: ACR_NAME.azurecr.io/shopai-gateway:IMAGE_TAG   # replaced at deploy time
+          ports:
+            - containerPort: 8000
+          env:
+            - {name: CATALOG_URL, value: "http://catalog:8001"}
+            - {name: SEARCH_URL, value: "http://search:8002"}
+            - {name: CHATBOT_URL, value: "http://chatbot:8003"}
+            - {name: CART_URL, value: "http://cart:8004"}
+            - {name: ORDER_URL, value: "http://order:8005"}
+          readinessProbe:
+            httpGet: {path: /health, port: 8000}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: 8000}
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog
+  labels: {app: catalog, tier: backend}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: catalog}
+  template:
+    metadata:
+      labels: {app: catalog, tier: backend}
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: catalog
+          image: ACR_NAME.azurecr.io/shopai-catalog:IMAGE_TAG   # replaced at deploy time
+          ports:
+            - containerPort: 8001
+          env:
+            - {name: MONGO_URL, value: "mongodb://mongo:27017"}
+            - {name: MONGO_DB, value: "shopai"}
+            - name: ADMIN_KEY            # optional: enables POST /products
+              valueFrom: {secretKeyRef: {name: shopai-secrets, key: ADMIN_KEY, optional: true}}
+          readinessProbe:
+            httpGet: {path: /ready, port: 8001}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: 8001}
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 300m, memory: 128Mi}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search
+  labels: {app: search, tier: backend}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: search}
+  template:
+    metadata:
+      labels: {app: search, tier: backend}
+    spec:
+      containers:
+        - name: search
+          image: ACR_NAME.azurecr.io/shopai-search:IMAGE_TAG   # replaced at deploy time
+          ports:
+            - containerPort: 8002
+          env:
+            - {name: CATALOG_URL, value: "http://catalog:8001"}
+          readinessProbe:
+            httpGet: {path: /ready, port: 8002}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: 8002}
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 200m, memory: 256Mi}
+            limits: {cpu: 700m, memory: 512Mi}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chatbot
+  labels: {app: chatbot, tier: backend}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: chatbot}
+  template:
+    metadata:
+      labels: {app: chatbot, tier: backend}
+    spec:
+      containers:
+        - name: chatbot
+          image: ACR_NAME.azurecr.io/shopai-chatbot:IMAGE_TAG   # replaced at deploy time
+          ports:
+            - containerPort: 8003
+          env:
+            - {name: CATALOG_URL, value: "http://catalog:8001"}
+            - {name: SEARCH_URL, value: "http://search:8002"}
+            # Optional Azure OpenAI for the chatbot. Without them the bot uses rule-based replies.
+            - name: AZURE_OPENAI_ENDPOINT
+              valueFrom: {secretKeyRef: {name: shopai-secrets, key: AZURE_OPENAI_ENDPOINT, optional: true}}
+            - name: AZURE_OPENAI_API_KEY
+              valueFrom: {secretKeyRef: {name: shopai-secrets, key: AZURE_OPENAI_API_KEY, optional: true}}
+            - name: AZURE_OPENAI_DEPLOYMENT
+              valueFrom: {secretKeyRef: {name: shopai-secrets, key: AZURE_OPENAI_DEPLOYMENT, optional: true}}
+          readinessProbe:
+            httpGet: {path: /health, port: 8003}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: 8003}
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 100m, memory: 192Mi}
+            limits: {cpu: 500m, memory: 384Mi}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart
+  labels: {app: cart, tier: backend}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: cart}
+  template:
+    metadata:
+      labels: {app: cart, tier: backend}
+    spec:
+      containers:
+        - name: cart
+          image: ACR_NAME.azurecr.io/shopai-cart:IMAGE_TAG   # replaced at deploy time
+          ports:
+            - containerPort: 8004
+          env:
+            - {name: CATALOG_URL, value: "http://catalog:8001"}
+            - {name: REDIS_URL, value: "redis://redis:6379/0"}
+          readinessProbe:
+            httpGet: {path: /ready, port: 8004}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: 8004}
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 300m, memory: 128Mi}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order
+  labels: {app: order, tier: backend}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: order}
+  template:
+    metadata:
+      labels: {app: order, tier: backend}
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: order
+          image: ACR_NAME.azurecr.io/shopai-order:IMAGE_TAG   # replaced at deploy time
+          ports:
+            - containerPort: 8005
+          env:
+            - {name: CART_URL, value: "http://cart:8004"}
+            - {name: ORDER_DB_HOST, value: "postgres"}
+            - {name: ORDER_DB_PORT, value: "5432"}
+            - {name: ORDER_DB_USER, value: "shopai"}
+            - {name: ORDER_DB_NAME, value: "shopai"}
+            - name: ORDER_DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: shopai-db-secrets, key: POSTGRES_PASSWORD}}
+          readinessProbe:
+            httpGet: {path: /ready, port: 8005}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: 8005}
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 50m, memory: 96Mi}
+            limits: {cpu: 300m, memory: 192Mi}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  labels: {app: redis, tier: data}
+spec:
+  replicas: 1                # single instance: cart + order data lives here (see README for production notes)
+  selector:
+    matchLabels: {app: redis}
+  template:
+    metadata:
+      labels: {app: redis, tier: data}
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          args: ["--save", "60", "1", "--appendonly", "no"]
+          ports:
+            - containerPort: 6379
+          readinessProbe:
+            exec: {command: ["redis-cli", "ping"]}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 300m, memory: 256Mi}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels: {app: frontend, tier: web}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: frontend}
+  template:
+    metadata:
+      labels: {app: frontend, tier: web}
+    spec:
+      containers:
+        - name: frontend
+          image: ACR_NAME.azurecr.io/shopai-frontend:IMAGE_TAG
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet: {path: /, port: 80}
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 50m, memory: 32Mi}
+            limits: {cpu: 200m, memory: 128Mi}

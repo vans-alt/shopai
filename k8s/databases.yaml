@@ -1,0 +1,112 @@
+# MongoDB (catalog) + MySQL (orders), each with a persistent disk.
+# Create the password secret ONCE before applying (never commit real passwords):
+#   kubectl create secret generic shopai-db-secrets \
+#     --from-literal=MYSQL_ROOT_PASSWORD='<strong-root-pw>' --from-literal=MYSQL_PASSWORD='<strong-app-pw>'
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: mongo-pvc}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: 2Gi}}      # AKS default storage class = Azure managed disk
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: mysql-pvc}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: 5Gi}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  labels: {app: mongo, tier: data}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}                 # an RWO disk can attach to one pod at a time
+  selector:
+    matchLabels: {app: mongo}
+  template:
+    metadata:
+      labels: {app: mongo, tier: data}
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: mongo
+          image: mongo:7
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - {name: data, mountPath: /data/db}
+          readinessProbe:
+            exec: {command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: mongo-pvc}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+spec:
+  type: ClusterIP
+  selector: {app: mongo}
+  ports:
+    - port: 27017
+      targetPort: 27017
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels: {app: mysql, tier: data}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: mysql}
+  template:
+    metadata:
+      labels: {app: mysql, tier: data}
+    spec:
+      enableServiceLinks: false              # avoids Kubernetes injecting a confusing MYSQL_PORT=tcp://... variable
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - {name: MYSQL_DATABASE, value: shopai}
+            - {name: MYSQL_USER, value: shopai}
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom: {secretKeyRef: {name: shopai-db-secrets, key: MYSQL_ROOT_PASSWORD}}
+            - name: MYSQL_PASSWORD
+              valueFrom: {secretKeyRef: {name: shopai-db-secrets, key: MYSQL_PASSWORD}}
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/mysql}
+          readinessProbe:
+            exec: {command: ["sh", "-c", "mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD --silent"]}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 200m, memory: 512Mi}
+            limits: {cpu: 1000m, memory: 1Gi}
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: mysql-pvc}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  type: ClusterIP
+  selector: {app: mysql}
+  ports:
+    - port: 3306
+      targetPort: 3306
